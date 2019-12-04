@@ -84,3 +84,54 @@ class minibatch(object):
     def restart(self):
         self.remain_df=self.original
         self.return_df=pd.DataFrame()
+        
+def down_sample(df,percent=0.1):
+    '''
+    dataframe needs to have:
+    loan_status != CURRENT
+    grade =  A B C D E F G
+    loan_status = Fully Paid, Default
+    '''
+    month_grouped=df.groupby('issue_d',as_index=False)
+    month_sampled_df=month_grouped.apply(lambda x: x.sample(frac=percent,random_state=0))
+    month_sampled_df.index=month_sampled_df.index.droplevel()
+    default_rate_df=pd.DataFrame(month_sampled_df.groupby('grade').apply(lambda x:(x['loan_status']=='Default').sum()/x['loan_status'].count()),columns=['Default_Rate'])
+    np.random.seed(0)
+    down_sampled_df=pd.DataFrame()
+    for grade in ['A','B','C','D','E','F','G']:
+#         print(grade)
+        if (default_rate_df.loc[grade,:][0] <=0.5):
+            # in the case where we need to down sample fully paid:
+            # stratifying by grade
+            grade_df=(month_sampled_df.groupby('grade').get_group(grade))
+            # Dividing into fully paid and default
+            Fully_Paid_grade_df=grade_df[grade_df['loan_status']=='Fully Paid']
+            Default_grade_df=grade_df[grade_df['loan_status']=='Default']
+            # down sample fully paid sample size into default sample size
+            down_sample_size=Default_grade_df.shape[0]
+            down_sampled_index=np.random.choice(Fully_Paid_grade_df.index,size=down_sample_size,replace=False)
+            down_sampled_Fully_Paid_grade_df=Fully_Paid_grade_df.loc[down_sampled_index,:]
+            # Combining the new downsampled dataframes together
+            down_sampled_df=pd.concat([down_sampled_df,down_sampled_Fully_Paid_grade_df])
+            down_sampled_df=pd.concat([down_sampled_df,Default_grade_df])
+        else: 
+            # in the case where we need to down sample default: 
+            # stratifying by grade
+            grade_df=(month_sampled_df.groupby('grade').get_group(grade))
+            # Dividing into fully paid and default
+            Fully_Paid_grade_df=grade_df[grade_df['loan_status']=='Fully Paid']
+            Default_grade_df=grade_df[grade_df['loan_status']=='Default']
+            # down sample fully paid sample size into default sample size
+            down_sample_size=Default_grade_df.shape[0]
+            down_sampled_index=np.random.choice(Default_grade_df.index,size=down_sample_size,replace=False)
+            down_sampled_Default_grade_df=Default_grade_df.loc[down_sampled_index,:]
+            # Combining the new downsampled dataframes together
+            down_sampled_df=pd.concat([down_sampled_df,down_sampled_Default_grade_df])
+            down_sampled_df=pd.concat([down_sampled_df,Fully_Paid_grade_df])
+    return down_sampled_df
+
+
+
+    
+    
+    
