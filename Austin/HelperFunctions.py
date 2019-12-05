@@ -93,7 +93,7 @@ def down_sample(df,percent=0.1):
     loan_status = Fully Paid, Default
     '''
     month_grouped=df.groupby('issue_d',as_index=False)
-    month_sampled_df=month_grouped.apply(lambda x: x.sample(frac=percent,random_state=0))
+    month_sampled_df=month_grouped.apply(lambda x: x.sample(frac=1,random_state=0))
     month_sampled_df.index=month_sampled_df.index.droplevel()
     default_rate_df=pd.DataFrame(month_sampled_df.groupby('grade').apply(lambda x:(x['loan_status']=='Default').sum()/x['loan_status'].count()),columns=['Default_Rate'])
     np.random.seed(0)
@@ -111,9 +111,12 @@ def down_sample(df,percent=0.1):
             down_sample_size=Default_grade_df.shape[0]
             down_sampled_index=np.random.choice(Fully_Paid_grade_df.index,size=down_sample_size,replace=False)
             down_sampled_Fully_Paid_grade_df=Fully_Paid_grade_df.loc[down_sampled_index,:]
+            # Down sizing both fully paid and default loans to a user defined percentage
+            down_sized_Fully_Paid_grade_df=down_sampled_Fully_Paid_grade_df.sample(frac=percent,random_state=0)
+            down_sized_Default_grade_df=Default_grade_df.sample(frac=percent,random_state=0)
             # Combining the new downsampled dataframes together
-            down_sampled_df=pd.concat([down_sampled_df,down_sampled_Fully_Paid_grade_df])
-            down_sampled_df=pd.concat([down_sampled_df,Default_grade_df])
+            down_sampled_df=pd.concat([down_sampled_df,down_sized_Fully_Paid_grade_df])
+            down_sampled_df=pd.concat([down_sampled_df,down_sized_Default_grade_df])
         else: 
             # in the case where we need to down sample default: 
             # stratifying by grade
@@ -125,13 +128,63 @@ def down_sample(df,percent=0.1):
             down_sample_size=Default_grade_df.shape[0]
             down_sampled_index=np.random.choice(Default_grade_df.index,size=down_sample_size,replace=False)
             down_sampled_Default_grade_df=Default_grade_df.loc[down_sampled_index,:]
+            # Down sizing both fully paid and default loans to a user defined percentage
+            down_sized_Default_grade_df=down_sampled_Default_grade_df.sample(frac=percent,random_state=0)
+            down_sized_Fully_Paid_grade_df=Fully_Paid_grade_df.sample(frac=percent,random_state=0)
             # Combining the new downsampled dataframes together
-            down_sampled_df=pd.concat([down_sampled_df,down_sampled_Default_grade_df])
-            down_sampled_df=pd.concat([down_sampled_df,Fully_Paid_grade_df])
+            down_sampled_df=pd.concat([down_sampled_df,down_sized_Default_grade_df])
+            down_sampled_df=pd.concat([down_sampled_df,down_sized_Fully_Paid_grade_df])
     return down_sampled_df
 
+def feature_standardize(data,scaleType='standardize'):
+    '''
+    - Accepts a dataframe column
+    '''
+    if scaleType not in ['standardize', 'normalize']: 
+        raise ValueError('%s is not a valid choice' %(scaleType))
+    mean_value=np.mean(data)
+    standard_dev=np.std(data)
+    min_value=np.min(data)
+    max_value=np.max(data)
+    if scaleType == 'standardize':
+        return((data-mean_value)/standard_dev) 
+    elif scaleType == 'normalize':
+        return((data-min_value)/(max_value-min_value))
+    
+def label_encode_column(dataframe,column_name):
+    '''
+    - dataframe takes the entire dataframe you are working on
+    - column_name takes a list of strings, where the strings are the column names
+    '''
+    from sklearn import preprocessing 
+    label_encoder = preprocessing.LabelEncoder() 
+    label_encoded_df=dataframe.copy()
+    for feature in column_name:
+        label_encoded_feature=label_encoder.fit_transform(label_encoded_df.loc[:,feature])
+        tempdf=pd.DataFrame(label_encoded_feature,columns=['{}'.format(feature)])
+        label_encoded_df = pd.concat([label_encoded_df.drop(feature,axis=1),tempdf],axis=1,sort='False')
+    return label_encoded_df   
 
-
-    
-    
-    
+def columns_of_type(df,type_you_want):
+    '''
+    type_you_want = accepts a string:
+    'number', 'object', 'category', 'bool', 'datetime', 'timedelta' 
+    'continuous','string'
+    '''
+    df_number = df.select_dtypes(include = 'number')
+    df_object = df.select_dtypes(include = 'object')
+#     df_category = df.select_dtypes(include = 'category')
+#     df_boolean = df.select_dtypes(include = 'bool')
+#     df_datetime = df.select_dtypes(include = 'datetime')
+#     df_timedelta = df.select_dtypes(include = 'timedelta')
+    #######################################################
+#     nominal_var=list(df_object.columns)
+#     ordinal_var=list(df_number.columns)
+#     continuous_var=list(df_number.columns)
+#     time_var=list(df_datetime.columns)
+    if (type_you_want=='number')|(type_you_want=='continuous'):
+        return list(df_number.columns)
+    elif (type_you_want=='object')|(type_you_want=='category')|(type_you_want=='string'):
+        return list(df_object.columns)
+    else: 
+        raise ValueError('type is not a valid choice')
