@@ -188,3 +188,8 @@ def columns_of_type(df,type_you_want):
         return list(df_object.columns)
     else: 
         raise ValueError('type is not a valid choice')
+        
+def remove_outliers(dataframe,col,threshold=5):
+    standarddeviation=np.std(dataframe.loc[dataframe.loc[:,col]!=-999,col])
+    df=dataframe.loc[abs(dataframe.loc[:,col])<standarddeviation*threshold,:]
+    return df
