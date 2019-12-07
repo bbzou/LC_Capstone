@@ -173,15 +173,6 @@ def columns_of_type(df,type_you_want):
     '''
     df_number = df.select_dtypes(include = 'number')
     df_object = df.select_dtypes(include = 'object')
-#     df_category = df.select_dtypes(include = 'category')
-#     df_boolean = df.select_dtypes(include = 'bool')
-#     df_datetime = df.select_dtypes(include = 'datetime')
-#     df_timedelta = df.select_dtypes(include = 'timedelta')
-    #######################################################
-#     nominal_var=list(df_object.columns)
-#     ordinal_var=list(df_number.columns)
-#     continuous_var=list(df_number.columns)
-#     time_var=list(df_datetime.columns)
     if (type_you_want=='number')|(type_you_want=='continuous'):
         return list(df_number.columns)
     elif (type_you_want=='object')|(type_you_want=='category')|(type_you_want=='string'):
@@ -193,3 +184,26 @@ def remove_outliers(dataframe,col,threshold=5):
     standarddeviation=np.std(dataframe.loc[dataframe.loc[:,col]!=-999,col])
     df=dataframe.loc[abs(dataframe.loc[:,col])<standarddeviation*threshold,:]
     return df
+
+def adjust_prob(unsampled_df,sampled_df,sampled_prob): # sampled_df, sampled_prob can also be test_df, test_prob
+    # turning the predicted probability into a dataframe with column name default_prob
+    sample_prob_df=pd.DataFrame(sampled_prob[:,0],columns=['sampled_prob'])
+    # find actual default rate for each class
+    grade_rate=unsampled_df.groupby('grade')['loan_status'].apply(lambda x:(x=='Default').sum()/x.count())
+    grade_rate_dict=grade_rate.to_dict()
+    # mapping the unsampled_df default rates to the test_df=sampled_df
+    # and then getting the array of default_rates in the test_df
+    sampled_df['default_rate']=sampled_df['grade'].map(grade_rate_dict)
+    sampled_df.reset_index(drop=True, inplace=True)
+    sample_prob_df.reset_index(drop=True, inplace=True)
+    pre_adjust_df=pd.concat([sampled_df,sample_prob_df],axis=1)
+    # Adjusting the default_probability to the true probability (accounting for down/up sampling)    
+    sampled_frac=0.5
+    real_prob=[]
+    for row in pre_adjust_df.loc[:,['default_rate','sampled_prob']].iterrows():
+        beta=sampled_frac/(1-row[1]['default_rate'])
+        real_prob.append(beta*row[1]['sampled_prob']/((beta-1)*row[1]['sampled_prob']+1))
+        #     prob=1/(1+(1/original_fraction-1)/(1/sampled_fraction-1)*(1/sampled_prob-1))
+    a=pd.DataFrame(real_prob,columns=['actual_prob'])
+    b=pd.DataFrame(sampled_prob[:,0],columns=['downsampled_prob'])
+    return pd.concat([a,b],axis=1)
