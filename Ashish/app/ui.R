@@ -26,16 +26,16 @@ shinyUI(
                 
                 # **AS**
                 # Start - Remove below:
-                selectInput("Objective",
-                            label = h5("Objective"),
-                            width='100%',
-                            choices = list("Risky" = 'Risky', 'Neutral',"Safe" = 'Safe'),
-                            selected = 1),
-                numericInput("budget",
-                             label = h5("Budget ($)"),
-                             value = 5000,
-                             width='100%',
-                             step=1),
+                # selectInput("Objective",
+                #             label = h5("Objective"),
+                #             width='100%',
+                #             choices = list("Risky" = 'Risky', 'Neutral',"Safe" = 'Safe'),
+                #             selected = 1),
+                # numericInput("budget",
+                #              label = h5("Budget ($)"),
+                #              value = 5000,
+                #              width='100%',
+                #              step=1),
                 # End.
                 
                 
@@ -68,19 +68,50 @@ shinyUI(
                 sliderInput("Int_Rate", h4("Interest Rate %:"),
                             min = 0, max = 40,
                             value = c(0,40)),
-                checkboxGroupInput("Loan_Grade", 
-                                   label = h4("Loan Grade"), 
-                                   choices = list("A" = "A", "B" = "B", 
-                                                  "C" = "C","D" = "D",
-                                                  "E" = "E",'F'='F',
-                                                  'G'='G'),
-                                   selected = c('A','B','C','D','E','F','G'),
-                                   inline = FALSE),
-                checkboxGroupInput("Term", 
-                                   label = h4("Term"), 
-                                   choices = list("3 years" = 36, "5 years" = 60),
-                                   selected = c(36,60),
-                                   inline = FALSE)
+                
+                
+                # checkboxGroupInput("Loan_Grade", 
+                #                    label = h4("Loan Grade"), 
+                #                    choices = list("A" = "A", "B" = "B", 
+                #                                   "C" = "C","D" = "D",
+                #                                   "E" = "E",'F'='F',
+                #                                   'G'='G'),
+                #                    selected = c('A','B','C','D','E','F','G'),
+                #                    inline = FALSE),
+                # 
+                # 
+                # checkboxGroupInput("Term", 
+                #                    label = h4("Term"), 
+                #                    choices = list("3 years" = 36, "5 years" = 60),
+                #                    selected = c(36,60),
+                #                    inline = FALSE)
+                
+                
+                
+                # **AS**
+                # Start: The above that should be removed are added below under fluid row
+                fluidRow(
+                    column(6,
+                           checkboxGroupInput("Loan_Grade", 
+                                              label = h4("Loan Grade"), 
+                                              choices = list("A" = "A", "B" = "B", 
+                                                             "C" = "C","D" = "D",
+                                                             "E" = "E",'F'='F',
+                                                             'G'='G'),
+                                              selected = c('A','B','C','D','E','F','G'),
+                                              inline = FALSE)),
+                    column(6,
+                           checkboxGroupInput("Term", 
+                                              label = h4("Term"), 
+                                              choices = list("3 years" = 36, "5 years" = 60),
+                                              selected = c(36,60),
+                                              inline = FALSE))
+                )
+                # End.
+                
+                
+                
+                
             )
         ),
         dashboardBody(
